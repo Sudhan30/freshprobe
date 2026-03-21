@@ -60,7 +60,9 @@ freshprobe never phones home. There are no update checks, no analytics endpoints
 
 ## MCP server mode
 
-When running as an MCP server (stdio transport), freshprobe communicates exclusively with the local AI agent process via stdin/stdout. No network connections are made except to the endpoints the agent requests to probe.
+When running as an MCP server (stdio transport), freshprobe communicates exclusively with the local AI agent process (such as Claude Code) via stdin/stdout on your local machine. The MCP protocol uses JSON-RPC messages over standard I/O pipes. No data is sent to Anthropic, the plugin maintainers, or any third party through this channel. The only outbound network connections are to the endpoints the agent requests to probe.
+
+When installed as a Claude Code plugin, freshprobe runs as a local child process of Claude Code. No credentials, API keys, policies, or probe results leave your machine through the MCP channel. Claude Code sends probe requests (containing only the URL and options you specified), and freshprobe returns the verdict JSON.
 
 ## HTTP server mode
 

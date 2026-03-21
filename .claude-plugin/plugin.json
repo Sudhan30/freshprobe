@@ -1,11 +1,23 @@
 {
   "name": "freshprobe",
-  "description": "Data freshness and endpoint liveness verification for AI agents. Probes endpoints for staleness, latency, TLS health, and content changes. Returns deterministic FRESH/STALE/UNKNOWN verdicts.",
+  "description": "Data freshness and endpoint liveness verification for AI agents. Probes endpoints for staleness, latency, TLS health, and content changes. Returns deterministic FRESH/STALE/UNKNOWN verdicts with NIST AI RMF alignment.",
   "version": "0.1.0",
   "license": "MIT",
   "author": {
     "name": "Sudhan30",
+    "email": "sudhan0312@gmail.com",
     "url": "https://github.com/Sudhan30"
   },
-  "repository": "https://github.com/Sudhan30/freshprobe"
+  "repository": "https://github.com/Sudhan30/freshprobe",
+  "homepage": "https://github.com/Sudhan30/freshprobe#readme",
+  "keywords": [
+    "freshness-verification",
+    "api-health",
+    "data-staleness",
+    "endpoint-liveness",
+    "mcp-server",
+    "data-quality",
+    "cache-validation",
+    "tls-verification"
+  ]
 }

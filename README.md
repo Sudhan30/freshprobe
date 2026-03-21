@@ -297,6 +297,50 @@ Every probe returns a deterministic JSON verdict:
 - `github.com/spf13/cobra` (CLI framework)
 - `gopkg.in/yaml.v3` (policy file parsing)
 
+## Claude Code plugin
+
+freshprobe is available as a Claude Code plugin. Once installed, Claude gains the
+ability to verify endpoint freshness and data quality on your behalf.
+
+### Install the plugin
+
+```
+/plugin install github:Sudhan30/freshprobe
+```
+
+### What the plugin provides
+
+| Component | Type | Description |
+|-----------|------|-------------|
+| `freshprobe` MCP server | MCP (stdio) | Exposes `freshprobe_check`, `freshprobe_batch`, `freshprobe_policy` tools |
+| `freshprobe-check` | Skill | Triggers when you ask about data freshness, endpoint health, or API reliability |
+| `freshprobe-verifier` | Agent | Autonomous endpoint verification with actionable recommendations |
+
+### Example conversations
+
+After installing the plugin, you can ask Claude things like:
+
+- "Is the trading API at https://api.example.com/quotes returning fresh data?"
+- "Check all our endpoints before running the batch job"
+- "Does https://api.example.com/data meet our real-time SLA?"
+- "The dashboard seems stale, can you check the data source?"
+
+Claude will automatically use the freshprobe skill or agent to probe the endpoints
+and report back with a clear verdict and recommendation.
+
+### Prerequisites
+
+The `freshprobe` binary must be installed and in your PATH:
+
+```bash
+go install github.com/Sudhan30/freshprobe/cmd/freshprobe@latest
+```
+
+If `freshprobe: command not found` appears, add Go's bin directory to your PATH:
+```bash
+export PATH=$PATH:$HOME/go/bin
+```
+
 ## Kubernetes deployment
 
 freshprobe ships as a 42MB Docker image. Example K8s deployment:
