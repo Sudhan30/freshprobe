@@ -45,11 +45,12 @@ type FreshnessSummary struct {
 
 // LivenessSummary captures endpoint health.
 type LivenessSummary struct {
-	Status    string  `json:"status"`
-	P50Ms     int64   `json:"latency_p50_ms"`
-	P95Ms     int64   `json:"latency_p95_ms"`
-	P99Ms     int64   `json:"latency_p99_ms"`
-	ErrorRate float64 `json:"error_rate"`
+	Status     string  `json:"status"`
+	StatusCode int     `json:"status_code"`
+	P50Ms      int64   `json:"latency_p50_ms"`
+	P95Ms      int64   `json:"latency_p95_ms"`
+	P99Ms      int64   `json:"latency_p99_ms"`
+	ErrorRate  float64 `json:"error_rate"`
 }
 
 // TLSSummary captures TLS certificate state.
@@ -122,11 +123,12 @@ func ComputeVerdict(result *probe.ProbeResult, rule *policy.PolicyRule) *ProbeVe
 			status = "DEGRADED"
 		}
 		v.Liveness = &LivenessSummary{
-			Status:    status,
-			P50Ms:     result.Liveness.P50Ms,
-			P95Ms:     result.Liveness.P95Ms,
-			P99Ms:     result.Liveness.P99Ms,
-			ErrorRate: result.Liveness.ErrorRate,
+			Status:     status,
+			StatusCode: result.Liveness.StatusCode,
+			P50Ms:      result.Liveness.P50Ms,
+			P95Ms:      result.Liveness.P95Ms,
+			P99Ms:      result.Liveness.P99Ms,
+			ErrorRate:  result.Liveness.ErrorRate,
 		}
 	}
 
@@ -208,12 +210,13 @@ func computeVerdictAndConfidence(result *probe.ProbeResult, rule *policy.PolicyR
 	}
 
 	// Signal 3: Liveness
-	if result.Liveness != nil && result.Liveness.IsHealthy {
+	if result.Liveness != nil {
 		signals++
 		totalConfidence += 0.7
-		if !result.Liveness.Degraded {
+		if result.Liveness.IsHealthy && !result.Liveness.Degraded {
 			freshSignals++
 		}
+		// Unhealthy endpoints are never fresh
 	}
 
 	// Signal 4: Policy threshold check

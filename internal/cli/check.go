@@ -90,7 +90,7 @@ func outputVerdict(v *verdict.ProbeVerdict) error {
 			fmt.Printf("Freshness: %.2f\n", v.Freshness.FreshnessScore)
 		}
 		if v.Liveness != nil {
-			fmt.Printf("Liveness:  %s (P50: %dms, P95: %dms)\n", v.Liveness.Status, v.Liveness.P50Ms, v.Liveness.P95Ms)
+			fmt.Printf("Liveness:  %s [%d] (P50: %dms, P95: %dms)\n", v.Liveness.Status, v.Liveness.StatusCode, v.Liveness.P50Ms, v.Liveness.P95Ms)
 		}
 		if v.PolicyResult != nil {
 			if v.PolicyResult.Passed {
