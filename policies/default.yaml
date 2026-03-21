@@ -1,0 +1,43 @@
+version: "1"
+policies:
+  api-realtime:
+    name: "Real-time API"
+    description: "APIs expected to return fresh data within 60 seconds"
+    domains: ["api.*"]
+    max_staleness: "60s"
+    min_freshness_score: 0.8
+    max_latency_p95_ms: 500
+    require_tls: true
+    min_tls_days_left: 30
+    require_changing: true
+
+  api-standard:
+    name: "Standard API"
+    description: "APIs with moderate freshness requirements"
+    domains: ["*.api.*"]
+    max_staleness: "5m"
+    min_freshness_score: 0.6
+    max_latency_p95_ms: 2000
+    require_tls: true
+    min_tls_days_left: 14
+
+  static-content:
+    name: "Static Content"
+    description: "CDN and static asset endpoints"
+    domains: ["cdn.*", "static.*"]
+    max_staleness: "24h"
+    min_freshness_score: 0.3
+    max_latency_p95_ms: 2000
+    require_tls: true
+    min_tls_days_left: 14
+
+  financial-data:
+    name: "Financial Data"
+    description: "Financial market data requiring near-real-time freshness"
+    domains: ["*.market.*", "*.trading.*", "*.finance.*"]
+    max_staleness: "30s"
+    min_freshness_score: 0.9
+    max_latency_p95_ms: 200
+    require_tls: true
+    min_tls_days_left: 30
+    require_changing: true
