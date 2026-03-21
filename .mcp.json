@@ -1,7 +1,7 @@
 {
   "freshprobe": {
     "type": "stdio",
-    "command": "/home/sudhan0312/go/bin/freshprobe",
-    "args": ["serve", "--mode", "mcp", "--policy-dir", "/home/sudhan0312/Desktop/freshprobe/policies", "--stateless"]
+    "command": "freshprobe",
+    "args": ["serve", "--mode", "mcp", "--policy-dir", "${CLAUDE_PLUGIN_ROOT}/policies", "--stateless"]
   }
 }
