@@ -1,4 +1,8 @@
 {
+  "$schema": "https://glama.ai/mcp/schemas/server.json",
+  "maintainers": [
+    "Sudhan30"
+  ],
   "name": "freshprobe",
   "description": "Data freshness verification for AI agents. Probes endpoints for HTTP cache staleness, latency percentiles, content fingerprinting, TLS certificate health, DNS timing, and redirect chains. Returns deterministic FRESH/STALE/UNKNOWN JSON verdicts with policy evaluation and NIST AI RMF mapping.",
   "author": "Sudhan30",
