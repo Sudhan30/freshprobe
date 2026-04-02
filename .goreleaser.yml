@@ -44,11 +44,9 @@ dockers:
   - image_templates:
       - "ghcr.io/sudhan30/freshprobe:{{ .Version }}"
       - "ghcr.io/sudhan30/freshprobe:latest"
-    dockerfile: Dockerfile
-    build_flag_templates:
-      - "--build-arg=VERSION={{.Version}}"
+    dockerfile: Dockerfile.goreleaser
     extra_files:
-      - policies/
+      - policies/default.yaml
 
 release:
   github:
