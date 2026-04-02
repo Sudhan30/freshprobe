@@ -16,24 +16,24 @@ import (
 
 // CheckInput is the input schema for freshprobe_check.
 type CheckInput struct {
-	URL         string `json:"url" jsonschema:"the URL to probe for freshness"`
-	Repeat      int    `json:"repeat,omitempty" jsonschema:"number of repeat probes for fingerprinting"`
-	TimeoutSecs int    `json:"timeout_secs,omitempty" jsonschema:"probe timeout in seconds"`
-	SkipTLS     bool   `json:"skip_tls,omitempty" jsonschema:"skip TLS certificate checks"`
-	SkipDNS     bool   `json:"skip_dns,omitempty" jsonschema:"skip DNS resolution timing"`
+	URL         string `json:"url" jsonschema:"description=The URL to probe for freshness,required"`
+	Repeat      int    `json:"repeat,omitempty" jsonschema:"description=Number of repeat probes for fingerprinting"`
+	TimeoutSecs int    `json:"timeout_secs,omitempty" jsonschema:"description=Probe timeout in seconds"`
+	SkipTLS     bool   `json:"skip_tls,omitempty" jsonschema:"description=Skip TLS certificate checks"`
+	SkipDNS     bool   `json:"skip_dns,omitempty" jsonschema:"description=Skip DNS resolution timing"`
 }
 
 // BatchInput is the input schema for freshprobe_batch.
 type BatchInput struct {
-	URLs        []string `json:"urls" jsonschema:"list of URLs to probe"`
-	Repeat      int      `json:"repeat,omitempty" jsonschema:"number of repeat probes per URL"`
-	Concurrency int      `json:"concurrency,omitempty" jsonschema:"max concurrent probes"`
+	URLs        []string `json:"urls" jsonschema:"description=List of URLs to probe,required"`
+	Repeat      int      `json:"repeat,omitempty" jsonschema:"description=Number of repeat probes per URL"`
+	Concurrency int      `json:"concurrency,omitempty" jsonschema:"description=Max concurrent probes"`
 }
 
 // PolicyInput is the input schema for freshprobe_policy.
 type PolicyInput struct {
-	URL        string `json:"url" jsonschema:"the URL to check"`
-	PolicyName string `json:"policy_name" jsonschema:"name of the freshness policy to evaluate against"`
+	URL        string `json:"url" jsonschema:"description=The URL to check,required"`
+	PolicyName string `json:"policy_name" jsonschema:"description=Name of the freshness policy to evaluate against,required"`
 }
 
 func registerTools(server *mcp.Server, engine *probe.Engine, st store.Store, loader *policy.Loader) {
