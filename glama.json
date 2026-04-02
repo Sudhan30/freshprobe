@@ -1,0 +1,28 @@
+{
+  "name": "freshprobe",
+  "description": "Data freshness verification for AI agents. Probes endpoints for HTTP cache staleness, latency percentiles, content fingerprinting, TLS certificate health, DNS timing, and redirect chains. Returns deterministic FRESH/STALE/UNKNOWN JSON verdicts with policy evaluation and NIST AI RMF mapping.",
+  "author": "Sudhan30",
+  "license": "MIT",
+  "repository": "https://github.com/Sudhan30/freshprobe",
+  "categories": ["monitoring", "data-quality", "ai-agents"],
+  "tags": ["mcp", "data-freshness", "monitoring", "ai-agents", "golang", "cli"],
+  "tools": [
+    {
+      "name": "freshprobe_check",
+      "description": "Probe a single endpoint for data freshness and liveness. Returns a deterministic JSON verdict with freshness score, latency percentiles, TLS status, and content fingerprint."
+    },
+    {
+      "name": "freshprobe_batch",
+      "description": "Probe multiple endpoints concurrently for data freshness. Returns an array of JSON verdicts."
+    },
+    {
+      "name": "freshprobe_policy",
+      "description": "Check an endpoint against a named freshness policy. Returns verdict with pass/fail evaluation against policy thresholds."
+    }
+  ],
+  "related_servers": [
+    "pab1it0/prometheus-mcp-server",
+    "seekrays/mcp-monitor",
+    "gsmethells/preflight-mcp"
+  ]
+}
