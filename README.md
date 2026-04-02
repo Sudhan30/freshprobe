@@ -76,7 +76,7 @@ go install github.com/Sudhan30/freshprobe/cmd/freshprobe@latest
 **Docker:**
 
 ```bash
-docker run --rm sudhan03/freshprobe:latest check https://example.com
+docker run --rm ghcr.io/sudhan30/freshprobe:latest check https://example.com
 ```
 
 **From source:**
@@ -356,7 +356,7 @@ spec:
     spec:
       containers:
         - name: freshprobe
-          image: sudhan03/freshprobe:latest
+          image: ghcr.io/sudhan30/freshprobe:latest
           args: ["serve", "--mode", "http", "--addr", ":8080",
                  "--policy-dir", "/etc/freshprobe/policies", "--stateless"]
           ports:

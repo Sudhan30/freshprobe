@@ -40,6 +40,16 @@ changelog:
       - '^test:'
       - '^ci:'
 
+dockers:
+  - image_templates:
+      - "ghcr.io/sudhan30/freshprobe:{{ .Version }}"
+      - "ghcr.io/sudhan30/freshprobe:latest"
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--build-arg=VERSION={{.Version}}"
+    extra_files:
+      - policies/
+
 release:
   github:
     owner: Sudhan30
