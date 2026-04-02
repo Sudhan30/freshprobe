@@ -69,6 +69,7 @@ func handleCheck(engine *probe.Engine, st store.Store) http.HandlerFunc {
 
 		v := verdict.ComputeVerdict(result, nil)
 		_ = st.SaveProbe(r.Context(), v)
+		recordVerdictMetrics(v)
 
 		writeJSON(w, v)
 	}
@@ -129,6 +130,11 @@ func handleBatch(engine *probe.Engine, st store.Store) http.HandlerFunc {
 		}
 
 		wg.Wait()
+		for _, v := range results {
+			if v != nil {
+				recordVerdictMetrics(v)
+			}
+		}
 		writeJSON(w, results)
 	}
 }
@@ -164,6 +170,7 @@ func handlePolicy(engine *probe.Engine, st store.Store, loader *policy.Loader) h
 
 		v := verdict.ComputeVerdict(result, rule)
 		_ = st.SaveProbe(r.Context(), v)
+		recordVerdictMetrics(v)
 
 		writeJSON(w, v)
 	}
@@ -186,4 +193,16 @@ func httpError(w http.ResponseWriter, msg string, code int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(map[string]string{"error": msg})
+}
+
+func recordVerdictMetrics(v *verdict.ProbeVerdict) {
+	var p95 int64
+	var score float64
+	if v.Liveness != nil {
+		p95 = v.Liveness.P95Ms
+	}
+	if v.Freshness != nil {
+		score = v.Freshness.FreshnessScore
+	}
+	RecordProbe(string(v.Verdict), p95, score)
 }

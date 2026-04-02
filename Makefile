@@ -2,7 +2,7 @@ VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev
 LDFLAGS := -ldflags "-X github.com/Sudhan30/freshprobe/internal/version.Version=$(VERSION)"
 BIN := bin/freshprobe
 
-.PHONY: build test lint clean docker cross
+.PHONY: build test lint vet clean docker cross
 
 build:
 	go build $(LDFLAGS) -o $(BIN) ./cmd/freshprobe
@@ -10,8 +10,11 @@ build:
 test:
 	go test -race ./...
 
-lint:
+vet:
 	go vet ./...
+
+lint: vet
+	@which golangci-lint > /dev/null 2>&1 && golangci-lint run || echo "golangci-lint not installed, skipping (go vet passed)"
 
 clean:
 	rm -rf bin/

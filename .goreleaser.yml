@@ -1,0 +1,58 @@
+version: 2
+
+project_name: freshprobe
+
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+
+builds:
+  - main: ./cmd/freshprobe
+    binary: freshprobe
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X github.com/Sudhan30/freshprobe/internal/version.Version={{.Version}}
+
+archives:
+  - format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+
+checksum:
+  name_template: 'checksums.txt'
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^ci:'
+
+dockers:
+  - image_templates:
+      - "sudhan03/freshprobe:{{ .Version }}"
+      - "sudhan03/freshprobe:latest"
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--build-arg=VERSION={{.Version}}"
+    extra_files:
+      - policies/
+
+release:
+  github:
+    owner: Sudhan30
+    name: freshprobe
+  draft: false
+  prerelease: auto

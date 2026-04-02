@@ -29,6 +29,7 @@ type ProbeResult struct {
 	Fingerprint *FingerprintResult `json:"fingerprint,omitempty"`
 	TLS         *TLSResult         `json:"tls,omitempty"`
 	DNS         *DNSResult         `json:"dns,omitempty"`
+	Redirects   *RedirectResult    `json:"redirects,omitempty"`
 	Error       string             `json:"error,omitempty"`
 }
 
@@ -130,6 +131,14 @@ func (e *Engine) Probe(ctx context.Context, req ProbeRequest) (*ProbeResult, err
 		dnsResult, err := MeasureDNS(ctx, parsed.Hostname())
 		if err == nil {
 			result.DNS = dnsResult
+		}
+	}
+
+	// Redirect chain analysis (skip if main probe already errored)
+	if result.Error == "" {
+		redirectResult, err := TraceRedirects(ctx, req.URL, req.Method, req.Headers, 10)
+		if err == nil && redirectResult.HasRedirect {
+			result.Redirects = redirectResult
 		}
 	}
 

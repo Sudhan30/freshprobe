@@ -3,6 +3,7 @@ package probe
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"sort"
 	"time"
@@ -10,14 +11,15 @@ import (
 
 // LivenessResult holds latency and status data from endpoint probing.
 type LivenessResult struct {
-	StatusCode int     `json:"status_code"`
-	LatencyMs  []int64 `json:"latencies_ms"`
-	P50Ms      int64   `json:"p50_ms"`
-	P95Ms      int64   `json:"p95_ms"`
-	P99Ms      int64   `json:"p99_ms"`
-	IsHealthy  bool    `json:"is_healthy"`
-	Degraded   bool    `json:"degraded"`
-	ErrorRate  float64 `json:"error_rate"`
+	StatusCode    int     `json:"status_code"`
+	LatencyMs     []int64 `json:"latencies_ms"`
+	P50Ms         int64   `json:"p50_ms"`
+	P95Ms         int64   `json:"p95_ms"`
+	P99Ms         int64   `json:"p99_ms"`
+	IsHealthy     bool    `json:"is_healthy"`
+	Degraded      bool    `json:"degraded"`
+	ErrorRate     float64 `json:"error_rate"`
+	BodySizeBytes int64   `json:"body_size_bytes"`
 }
 
 // MeasureLiveness probes the URL count times and measures latency percentiles.
@@ -30,6 +32,7 @@ func MeasureLiveness(ctx context.Context, client *http.Client, rawURL, method st
 	latencies := make([]int64, 0, count)
 	var lastHeaders http.Header
 	var lastStatus int
+	var lastBodySize int64
 	errors := 0
 
 	for i := 0; i < count; i++ {
@@ -56,11 +59,14 @@ func MeasureLiveness(ctx context.Context, client *http.Client, rawURL, method st
 			latencies = append(latencies, elapsed)
 			continue
 		}
+
+		bodySize, _ := io.Copy(io.Discard, resp.Body)
 		resp.Body.Close()
 
 		latencies = append(latencies, elapsed)
 		lastStatus = resp.StatusCode
 		lastHeaders = resp.Header
+		lastBodySize = bodySize
 	}
 
 	if len(latencies) == 0 {
@@ -72,12 +78,13 @@ func MeasureLiveness(ctx context.Context, client *http.Client, rawURL, method st
 	sort.Slice(sorted, func(i, j int) bool { return sorted[i] < sorted[j] })
 
 	result := &LivenessResult{
-		StatusCode: lastStatus,
-		LatencyMs:  latencies,
-		P50Ms:      percentile(sorted, 0.50),
-		P95Ms:      percentile(sorted, 0.95),
-		P99Ms:      percentile(sorted, 0.99),
-		ErrorRate:  float64(errors) / float64(count),
+		StatusCode:    lastStatus,
+		LatencyMs:     latencies,
+		P50Ms:         percentile(sorted, 0.50),
+		P95Ms:         percentile(sorted, 0.95),
+		P99Ms:         percentile(sorted, 0.99),
+		ErrorRate:     float64(errors) / float64(count),
+		BodySizeBytes: lastBodySize,
 	}
 
 	// Health assessment

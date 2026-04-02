@@ -17,6 +17,7 @@ func Run(ctx context.Context, engine *probe.Engine, st store.Store, loader *poli
 	mux.HandleFunc("POST /api/v1/batch", handleBatch(engine, st))
 	mux.HandleFunc("POST /api/v1/policy", handlePolicy(engine, st, loader))
 	mux.HandleFunc("GET /healthz", handleHealth())
+	mux.HandleFunc("GET /metrics", handleMetrics())
 
 	server := &http.Server{
 		Addr:    addr,

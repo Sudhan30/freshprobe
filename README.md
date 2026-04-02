@@ -1,12 +1,26 @@
-# freshprobe
+<p align="center">
+  <h1 align="center">freshprobe</h1>
+  <p align="center">
+    <strong>Data freshness verification for AI agents.</strong>
+    <br />
+    Stop your agents from acting on stale data.
+  </p>
+  <p align="center">
+    <a href="https://github.com/Sudhan30/freshprobe/actions/workflows/ci.yml"><img src="https://github.com/Sudhan30/freshprobe/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+    <a href="https://goreportcard.com/report/github.com/Sudhan30/freshprobe"><img src="https://goreportcard.com/badge/github.com/Sudhan30/freshprobe" alt="Go Report Card" /></a>
+    <a href="https://github.com/Sudhan30/freshprobe/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Sudhan30/freshprobe" alt="License" /></a>
+    <a href="https://github.com/Sudhan30/freshprobe/releases"><img src="https://img.shields.io/github/v/release/Sudhan30/freshprobe" alt="Release" /></a>
+    <img src="https://img.shields.io/badge/go-1.25-blue" alt="Go Version" />
+  </p>
+</p>
 
-**Data freshness and endpoint liveness verification for AI agents.**
+---
 
-freshprobe gives autonomous AI agents a deterministic answer to: *"Is the data I'm about to use current and reliable?"*
+> *"I asked my agent to check flight prices. It gave me options. I booked one. The fare had changed 3 hours ago."*
 
-It probes endpoints, analyzes HTTP cache headers, measures latency percentiles, fingerprints content for change detection, checks TLS certificate health, and returns structured JSON verdicts that agents can act on programmatically.
+AI agents routinely act on stale data without knowing it. A financial agent queries cached quotes from 47 minutes ago. A support bot tells a customer their order doesn't exist because the CRM hasn't synced. An RAG pipeline confidently answers with yesterday's docs.
 
-Built as a single Go binary. Runs as a CLI tool, an MCP server for AI agent integration, or an HTTP microservice.
+**freshprobe** sits between your agent and the external world. Before the agent acts, it asks: *is this data fresh enough?* The answer is always a deterministic JSON verdict: **FRESH**, **STALE**, or **UNKNOWN**.
 
 ```
 $ freshprobe check https://api.example.com/v2/quotes
@@ -24,7 +38,13 @@ $ freshprobe check https://api.example.com/v2/quotes
     "status": "DEGRADED",
     "latency_p50_ms": 342,
     "latency_p95_ms": 1847,
+    "body_size_bytes": 4096,
     "error_rate": 0.03
+  },
+  "redirects": {
+    "total_hops": 1,
+    "final_url": "https://api-v2.example.com/quotes",
+    "has_redirect": true
   },
   "nist_mapping": {
     "ai_rmf_function": "MEASURE",
@@ -33,35 +53,17 @@ $ freshprobe check https://api.example.com/v2/quotes
 }
 ```
 
-## Why
+Single Go binary. No dependencies. Runs as CLI, MCP server, or HTTP microservice.
 
-AI agents routinely act on stale data without knowing it. An agent querying a financial API may receive cached data from 47 minutes ago while believing it's real time. No tool currently provides agents with a structured, deterministic assessment of whether external data sources are fresh enough for the action being contemplated.
+## Why this matters
 
-freshprobe sits between the agent and the external world. Before the agent acts, it asks freshprobe: is this endpoint alive, is this data fresh, does this meet my policy thresholds? The answer is always a deterministic JSON verdict with a clear FRESH / STALE / UNKNOWN signal.
+| Problem | Cost |
+|---------|------|
+| E-commerce agent used 6-month-old product data | [$5M+ revenue loss](https://www.informatica.com/) |
+| Enterprise RAG with overlapping refresh infrastructure | $340K/year wasted |
+| AI project failures from data quality issues | [60%+ of failures (Gartner)](https://www.gartner.com/) |
 
-## Features
-
-**Five verification signals in one probe:**
-
-| Signal | What it checks |
-|--------|---------------|
-| **HTTP cache headers** | Parses `Last-Modified`, `Cache-Control`, `Age`, `ETag`, `Date`, `Expires`. Computes a 0.0 to 1.0 freshness score |
-| **Endpoint liveness** | Measures response latency (P50/P95/P99), checks status codes, detects degradation patterns |
-| **Content fingerprinting** | SHA-256 hashes response bodies across repeated probes to detect if content is actually updating |
-| **TLS certificate freshness** | Checks certificate validity, days remaining, OCSP stapling status |
-| **DNS resolution timing** | Measures DNS lookup latency as an infrastructure health signal |
-
-**Three deployment modes:**
-
-| Mode | Command | Use case |
-|------|---------|----------|
-| **CLI** | `freshprobe check <url>` | Ad hoc checks, scripts, CI/CD |
-| **MCP server** | `freshprobe serve --mode mcp` | AI agent integration (Claude, GPT, etc.) |
-| **HTTP server** | `freshprobe serve --mode http` | Microservice, team shared endpoint |
-
-**Policy as code:** Define freshness thresholds per domain in YAML. The agent asks "does this endpoint meet my `financial-data` policy?" and gets a pass/fail with specific violations listed.
-
-**NIST AI RMF aligned:** Every verdict includes NIST AI Risk Management Framework mappings for enterprise compliance reporting.
+Unlike crashes that trigger alerts, stale data produces **confident, well-formatted, completely wrong responses**. Chain a few of those in a multi-agent pipeline and every component reports green while the output is catastrophically wrong.
 
 ## Install
 
@@ -71,50 +73,77 @@ freshprobe sits between the agent and the external world. Before the agent acts,
 go install github.com/Sudhan30/freshprobe/cmd/freshprobe@latest
 ```
 
-**From source:**
-
-```bash
-git clone https://github.com/Sudhan30/freshprobe.git
-cd freshprobe
-make build
-./bin/freshprobe --version
-```
-
 **Docker:**
 
 ```bash
-docker pull sudhan03/freshprobe:v0.1.0
-docker run sudhan03/freshprobe:v0.1.0 check https://example.com
+docker run --rm sudhan03/freshprobe:latest check https://example.com
 ```
 
-## Quick start
+**From source:**
 
-### CLI usage
+```bash
+git clone https://github.com/Sudhan30/freshprobe.git && cd freshprobe && make build
+./bin/freshprobe --version
+```
+
+**GitHub Releases:** Download pre-built binaries for Linux, macOS, and Windows from [Releases](https://github.com/Sudhan30/freshprobe/releases).
+
+## Quick start
 
 ```bash
 # Basic freshness check
 freshprobe check https://api.example.com/data
 
-# Text output instead of JSON
+# Human-readable output
 freshprobe check https://api.example.com/data --output text
 
-# Content fingerprinting (3 probes, 2s apart)
+# Content fingerprinting: detect if data actually changes
 freshprobe check https://api.example.com/data --repeat 3 --interval 2s
 
-# Check against a policy
-freshprobe check https://api.example.com/data \
-  --policy-dir ./policies --policy financial-data
+# Check against a freshness policy
+freshprobe check https://api.example.com/data --policy-dir ./policies --policy financial-data
 
 # Batch check multiple endpoints
 freshprobe batch https://api1.example.com https://api2.example.com https://cdn.example.com
 
-# Stateless mode (no SQLite, no persistence)
-freshprobe check https://example.com --stateless
+# Continuous monitoring (Ctrl+C to stop)
+freshprobe watch https://api.example.com/data --interval 30s --output text
+
+# Only alert on verdict changes (FRESH -> STALE)
+freshprobe watch https://api.example.com/data --interval 1m --on-change --output text
+
+# View probe history for an endpoint
+freshprobe history https://api.example.com/data --limit 20 --output text
+```
+
+## Six verification signals
+
+| Signal | What it checks |
+|--------|---------------|
+| **HTTP cache headers** | Parses `Last-Modified`, `Cache-Control`, `Age`, `ETag`, `Date`, `Expires`. Computes 0.0 to 1.0 freshness score |
+| **Endpoint liveness** | Measures response latency (P50/P95/P99), status codes, body size, degradation patterns |
+| **Content fingerprinting** | SHA-256 hashes response bodies across repeated probes to detect stale caches |
+| **TLS certificate health** | Certificate validity, days remaining, OCSP stapling status |
+| **DNS resolution timing** | DNS lookup latency as infrastructure health signal |
+| **Redirect chain analysis** | Tracks 301/302/307/308 hops, detects stale CDN configs |
+
+## Three deployment modes
+
+### CLI
+
+```bash
+freshprobe check <url> [flags]
+freshprobe batch <urls...> [flags]
+freshprobe watch <url> --interval 30s [flags]
+freshprobe history <url> --limit 20
 ```
 
 ### MCP server (for AI agents)
 
-Add to your Claude Code config (`.mcp.json`):
+Add to your AI tool config:
+
+<details>
+<summary><strong>Claude Desktop / Claude Code</strong></summary>
 
 ```json
 {
@@ -125,6 +154,42 @@ Add to your Claude Code config (`.mcp.json`):
   }
 }
 ```
+</details>
+
+<details>
+<summary><strong>Cursor</strong></summary>
+
+In `.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "freshprobe": {
+      "command": "freshprobe",
+      "args": ["serve", "--mode", "mcp", "--stateless"]
+    }
+  }
+}
+```
+</details>
+
+<details>
+<summary><strong>VS Code (Copilot)</strong></summary>
+
+In `.vscode/mcp.json`:
+
+```json
+{
+  "servers": {
+    "freshprobe": {
+      "type": "stdio",
+      "command": "freshprobe",
+      "args": ["serve", "--mode", "mcp", "--stateless"]
+    }
+  }
+}
+```
+</details>
 
 This exposes three tools to AI agents:
 
@@ -140,18 +205,17 @@ This exposes three tools to AI agents:
 freshprobe serve --mode http --addr :8080
 ```
 
-Endpoints:
-
 ```
 POST /api/v1/check    {"url": "https://..."}
 POST /api/v1/batch    {"urls": ["https://...", "https://..."]}
 POST /api/v1/policy   {"url": "https://...", "policy_name": "api-realtime"}
 GET  /healthz
+GET  /metrics          # Prometheus-compatible metrics
 ```
 
-## Policies
+## Policies (freshness-as-code)
 
-Policies define freshness thresholds per domain or endpoint category. Create a YAML file:
+Define freshness thresholds per domain in YAML:
 
 ```yaml
 version: "1"
@@ -173,21 +237,9 @@ policies:
     min_freshness_score: 0.6
     max_latency_p95_ms: 2000
     require_tls: true
-    min_tls_days_left: 14
 ```
 
-Policy fields:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `max_staleness` | duration | Maximum acceptable data age (`30s`, `5m`, `24h`) |
-| `min_freshness_score` | float | Minimum freshness score (0.0 to 1.0) |
-| `max_latency_p95_ms` | int | Maximum acceptable P95 latency in milliseconds |
-| `require_tls` | bool | Require valid TLS certificate |
-| `min_tls_days_left` | int | Minimum days before TLS certificate expires |
-| `require_changing` | bool | Content must change between probes (detects stale caches) |
-
-When a probe violates a policy, the verdict includes specific violations:
+When a probe violates a policy:
 
 ```json
 {
@@ -202,57 +254,53 @@ When a probe violates a policy, the verdict includes specific violations:
 }
 ```
 
-## Output schema
+Four built-in policies included: `api-realtime`, `api-standard`, `static-content`, `financial-data`.
 
-Every probe returns a deterministic JSON verdict:
+## Continuous monitoring
 
-```json
-{
-  "verdict": "FRESH | STALE | UNKNOWN",
-  "confidence": 0.0-1.0,
-  "endpoint": "https://...",
-  "freshness": {
-    "data_age_seconds": 0,
-    "max_acceptable_seconds": 60,
-    "cache_control": "max-age=3600",
-    "freshness_score": 0.85,
-    "content_changed_since_last_probe": true
-  },
-  "liveness": {
-    "status": "HEALTHY | DEGRADED | UNHEALTHY",
-    "latency_p50_ms": 45,
-    "latency_p95_ms": 120,
-    "latency_p99_ms": 340,
-    "error_rate": 0.0
-  },
-  "tls": {
-    "valid": true,
-    "days_remaining": 149,
-    "ocsp_status": "good"
-  },
-  "dns": {
-    "latency_ms": 3,
-    "ip_count": 4
-  },
-  "nist_mapping": {
-    "ai_rmf_function": "MEASURE",
-    "control": "MS-2.6-001"
-  },
-  "policy_result": {
-    "policy_name": "...",
-    "passed": true,
-    "violations": []
-  },
-  "probe_metadata": {
-    "probe_id": "fp_a8c3e91d...",
-    "probe_timestamp": "2026-03-21T15:49:33Z",
-    "duration_ms": 553,
-    "engine": "freshprobe/v0.1.0"
-  }
-}
+```bash
+# Watch an endpoint, print every probe
+freshprobe watch https://api.example.com/quotes --interval 30s --output text
+
+# Only print when verdict changes (FRESH -> STALE transitions)
+freshprobe watch https://api.example.com/quotes --interval 1m --on-change --output text
+
+# Run 10 probes and exit
+freshprobe watch https://api.example.com/quotes --count 10 --interval 5s
 ```
 
-**Determinism contract:** Same probe result + same policy always produces the same verdict. The probe ID is derived from a hash of inputs, not random. This makes verdicts reproducible and auditable.
+Example output:
+```
+Watching https://api.example.com/quotes every 30s
+[14:22:01] FRESH conf=0.90 score=0.87 p95=142ms
+[14:22:31] FRESH conf=0.90 score=0.85 p95=156ms
+[14:23:01] STALE conf=0.85 score=0.22 p95=1847ms [FRESH -> STALE]
+```
+
+## Prometheus metrics
+
+The HTTP server exposes `/metrics` with Prometheus-compatible text format:
+
+```
+freshprobe_probes_total 142
+freshprobe_verdict_total{verdict="FRESH"} 98
+freshprobe_verdict_total{verdict="STALE"} 31
+freshprobe_verdict_total{verdict="UNKNOWN"} 13
+freshprobe_latency_p95_seconds 0.234000
+freshprobe_freshness_score 0.7200
+```
+
+## How it compares
+
+| Feature | freshprobe | Uptime Kuma | Gatus | freshcontext-mcp |
+|---------|-----------|-------------|-------|-----------------|
+| **Purpose** | Data freshness for AI agents | Uptime monitoring | Health dashboards | Web extraction timestamps |
+| **Knows data is stale** | Yes (cache headers + fingerprinting) | No (only checks HTTP status) | No (only checks response assertions) | Partial (timestamps, no verification) |
+| **MCP server** | Yes (3 tools) | No | No | Yes |
+| **Policy engine** | Yes (YAML, per-domain) | No | Yes (YAML conditions) | No |
+| **Continuous monitoring** | Yes (`watch` command) | Yes (dashboard) | Yes (dashboard) | No |
+| **Prometheus metrics** | Yes | No (push-based) | Yes | No |
+| **Deployment** | Single binary | Docker + DB | Single binary | npm package |
 
 ## Architecture
 
@@ -279,6 +327,7 @@ Every probe returns a deterministic JSON verdict:
                     | Content SHA-256  |
                     | TLS/OCSP        |
                     | DNS timing       |
+                    | Redirect chains  |
                     +--------+---------+
                              |
               +--------------+--------------+
@@ -290,60 +339,7 @@ Every probe returns a deterministic JSON verdict:
          +---------+   +---------+   +-----------+
 ```
 
-**Stack:**
-- Go (single binary, no runtime dependencies)
-- `modernc.org/sqlite` (pure Go SQLite, no CGO, easy cross compilation)
-- `github.com/modelcontextprotocol/go-sdk` (official MCP SDK, co-maintained with Google)
-- `github.com/spf13/cobra` (CLI framework)
-- `gopkg.in/yaml.v3` (policy file parsing)
-
-## Claude Code plugin
-
-freshprobe is available as a Claude Code plugin. Once installed, Claude gains the
-ability to verify endpoint freshness and data quality on your behalf.
-
-### Install the plugin
-
-```
-/plugin install github:Sudhan30/freshprobe
-```
-
-### What the plugin provides
-
-| Component | Type | Description |
-|-----------|------|-------------|
-| `freshprobe` MCP server | MCP (stdio) | Exposes `freshprobe_check`, `freshprobe_batch`, `freshprobe_policy` tools |
-| `freshprobe-check` | Skill | Triggers when you ask about data freshness, endpoint health, or API reliability |
-| `freshprobe-verifier` | Agent | Autonomous endpoint verification with actionable recommendations |
-
-### Example conversations
-
-After installing the plugin, you can ask Claude things like:
-
-- "Is the trading API at https://api.example.com/quotes returning fresh data?"
-- "Check all our endpoints before running the batch job"
-- "Does https://api.example.com/data meet our real-time SLA?"
-- "The dashboard seems stale, can you check the data source?"
-
-Claude will automatically use the freshprobe skill or agent to probe the endpoints
-and report back with a clear verdict and recommendation.
-
-### Prerequisites
-
-The `freshprobe` binary must be installed and in your PATH:
-
-```bash
-go install github.com/Sudhan30/freshprobe/cmd/freshprobe@latest
-```
-
-If `freshprobe: command not found` appears, add Go's bin directory to your PATH:
-```bash
-export PATH=$PATH:$HOME/go/bin
-```
-
 ## Kubernetes deployment
-
-freshprobe ships as a 42MB Docker image. Example K8s deployment:
 
 ```yaml
 apiVersion: apps/v1
@@ -360,7 +356,7 @@ spec:
     spec:
       containers:
         - name: freshprobe
-          image: sudhan03/freshprobe:v0.1.0
+          image: sudhan03/freshprobe:latest
           args: ["serve", "--mode", "http", "--addr", ":8080",
                  "--policy-dir", "/etc/freshprobe/policies", "--stateless"]
           ports:
@@ -374,89 +370,41 @@ spec:
             httpGet: { path: /healthz, port: 8080 }
 ```
 
+## Claude Code plugin
+
+```
+/plugin install github:Sudhan30/freshprobe
+```
+
+After installing, ask Claude:
+- *"Is the trading API returning fresh data?"*
+- *"Check all our endpoints before running the batch job"*
+- *"Does this API meet our real-time SLA?"*
+
 ## Development
 
 ```bash
-# Build
-make build
-
-# Run tests
-make test
-
-# Lint
-make lint
-
-# Cross compile (linux, macOS, Windows)
-make cross
-
-# Docker build
-make docker
-```
-
-### Project structure
-
-```
-cmd/freshprobe/main.go          Entry point
-internal/
-  probe/                        Core probe engine (5 signal modules)
-    engine.go                   Orchestrator
-    http.go                     Cache header analysis
-    liveness.go                 Latency measurement
-    fingerprint.go              Content hashing
-    tls.go                      Certificate checks
-    dns.go                      DNS timing
-  verdict/                      Deterministic verdict computation
-  policy/                       YAML policy loader and types
-  store/                        Storage (SQLite + stateless)
-  mcpserver/                    MCP server (stdio transport)
-  httpserver/                   HTTP REST server
-  cli/                          Cobra CLI commands
-policies/                       Default policy pack
+make build       # Build binary
+make test        # Run tests with race detector
+make lint        # go vet
+make cross       # Cross-compile (linux, macOS, Windows)
+make docker      # Docker build
 ```
 
 ## Contributing
 
-Contributions welcome. Some areas that would be particularly valuable:
-
-- **Policy packs**: Domain specific freshness policies (healthcare APIs, financial feeds, weather services)
-- **Additional probe signals**: WebSocket liveness, gRPC health checks, GraphQL introspection freshness
-- **Output integrations**: Prometheus metrics exporter, OpenTelemetry spans, webhook notifications
-- **Platform support**: ARM64 Docker images, Homebrew formula, APT/RPM packages
-
-```bash
-# Fork, clone, branch
-git checkout -b feature/your-feature
-
-# Make changes, test
-make test
-
-# Submit PR
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md). High-value areas:
+- Policy packs for specific domains (healthcare, weather, finance)
+- WebSocket/gRPC/GraphQL probe signals
+- OpenTelemetry integration
+- Homebrew formula
 
 ## License
 
-MIT License. Use it, modify it, ship it, sell it. No restrictions.
+MIT. See [LICENSE](LICENSE).
 
-```
-MIT License
+---
 
-Copyright (c) 2026 Sudhan30
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
+<p align="center">
+  If freshprobe helps your agents make better decisions, <a href="https://github.com/Sudhan30/freshprobe">give it a star</a>.
+</p>

@@ -21,17 +21,18 @@ const (
 
 // ProbeVerdict is the deterministic output of a freshprobe run.
 type ProbeVerdict struct {
-	Verdict        Verdict           `json:"verdict"`
-	Confidence     float64           `json:"confidence"`
-	Endpoint       string            `json:"endpoint"`
-	Freshness      *FreshnessSummary `json:"freshness"`
-	Liveness       *LivenessSummary  `json:"liveness,omitempty"`
-	TLS            *TLSSummary       `json:"tls,omitempty"`
-	DNS            *DNSSummary       `json:"dns,omitempty"`
-	Fingerprint    *FPSummary        `json:"fingerprint,omitempty"`
-	NISTMapping    *NISTMapping      `json:"nist_mapping"`
-	PolicyResult   *PolicyEvaluation `json:"policy_result,omitempty"`
-	ProbeMetadata  ProbeMetadata     `json:"probe_metadata"`
+	Verdict        Verdict            `json:"verdict"`
+	Confidence     float64            `json:"confidence"`
+	Endpoint       string             `json:"endpoint"`
+	Freshness      *FreshnessSummary  `json:"freshness"`
+	Liveness       *LivenessSummary   `json:"liveness,omitempty"`
+	TLS            *TLSSummary        `json:"tls,omitempty"`
+	DNS            *DNSSummary        `json:"dns,omitempty"`
+	Fingerprint    *FPSummary         `json:"fingerprint,omitempty"`
+	Redirects      *RedirectSummary   `json:"redirects,omitempty"`
+	NISTMapping    *NISTMapping       `json:"nist_mapping"`
+	PolicyResult   *PolicyEvaluation  `json:"policy_result,omitempty"`
+	ProbeMetadata  ProbeMetadata      `json:"probe_metadata"`
 }
 
 // FreshnessSummary captures cache freshness details.
@@ -45,12 +46,20 @@ type FreshnessSummary struct {
 
 // LivenessSummary captures endpoint health.
 type LivenessSummary struct {
-	Status     string  `json:"status"`
-	StatusCode int     `json:"status_code"`
-	P50Ms      int64   `json:"latency_p50_ms"`
-	P95Ms      int64   `json:"latency_p95_ms"`
-	P99Ms      int64   `json:"latency_p99_ms"`
-	ErrorRate  float64 `json:"error_rate"`
+	Status        string  `json:"status"`
+	StatusCode    int     `json:"status_code"`
+	P50Ms         int64   `json:"latency_p50_ms"`
+	P95Ms         int64   `json:"latency_p95_ms"`
+	P99Ms         int64   `json:"latency_p99_ms"`
+	ErrorRate     float64 `json:"error_rate"`
+	BodySizeBytes int64   `json:"body_size_bytes"`
+}
+
+// RedirectSummary captures HTTP redirect chain info.
+type RedirectSummary struct {
+	TotalHops   int    `json:"total_hops"`
+	FinalURL    string `json:"final_url"`
+	HasRedirect bool   `json:"has_redirect"`
 }
 
 // TLSSummary captures TLS certificate state.
@@ -123,12 +132,22 @@ func ComputeVerdict(result *probe.ProbeResult, rule *policy.PolicyRule) *ProbeVe
 			status = "DEGRADED"
 		}
 		v.Liveness = &LivenessSummary{
-			Status:     status,
-			StatusCode: result.Liveness.StatusCode,
-			P50Ms:      result.Liveness.P50Ms,
-			P95Ms:      result.Liveness.P95Ms,
-			P99Ms:      result.Liveness.P99Ms,
-			ErrorRate:  result.Liveness.ErrorRate,
+			Status:        status,
+			StatusCode:    result.Liveness.StatusCode,
+			P50Ms:         result.Liveness.P50Ms,
+			P95Ms:         result.Liveness.P95Ms,
+			P99Ms:         result.Liveness.P99Ms,
+			ErrorRate:     result.Liveness.ErrorRate,
+			BodySizeBytes: result.Liveness.BodySizeBytes,
+		}
+	}
+
+	// Build redirect summary
+	if result.Redirects != nil && result.Redirects.HasRedirect {
+		v.Redirects = &RedirectSummary{
+			TotalHops:   result.Redirects.TotalHops,
+			FinalURL:    result.Redirects.FinalURL,
+			HasRedirect: result.Redirects.HasRedirect,
 		}
 	}
 
