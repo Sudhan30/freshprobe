@@ -45,8 +45,6 @@ dockers:
       - "ghcr.io/sudhan30/freshprobe:{{ .Version }}"
       - "ghcr.io/sudhan30/freshprobe:latest"
     dockerfile: Dockerfile.goreleaser
-    extra_files:
-      - policies/default.yaml
 
 release:
   github:
